@@ -1,55 +1,75 @@
 ﻿using Maraton.Models;
+using Maraton.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using static Maraton.Models.Dto;
 
-namespace Maraton.Controllers
+namespace maraton.Controllers
 {
-    [Route("Eredmények")]
+    [Route("api/Eredmenyek")]
     [ApiController]
     public class EredmenyekController : ControllerBase
     {
-        private readonly Eredmenyek  EredmenyContext;
-
-        
-
         [HttpPost]
-        public async Task<ActionResult<Eredmenyek>> Post(CreateEredmenyekDto CreateEredmenyekDto)
+        public ActionResult<Eredmenyek> Post(CreateEredmenyDto createEredmenyDto)
         {
-            var os = new Eredmenyek
+            using (var context = new MaratonContext())
             {
-                Kor  =CreateEredmenyekDto.kor,
-                Ido = CreateEredmenyekDto.ido,
-                Futo = CreateEredmenyekDto.futo,
-
-               
-            };
-
-            if (os == null)
-            {
-                await EredmenyContext.Eredmenyek.AddAsync(os);
-                return StatusCode(201, os);
-
+                var Eredmeny = new Eredmenyek()
+                {
+                    Futo = createEredmenyDto.futo,
+                    Kor = createEredmenyDto.kor,
+                    Ido = createEredmenyDto.ido,
+                };
+                if (createEredmenyDto.futo != null)
+                {
+                    context.Add(Eredmeny);
+                    context.SaveChanges();
+                    return StatusCode(201, Eredmeny);
+                }
+                return BadRequest();
             }
-            return BadRequest();
-
-
         }
-        [HttpGet]
-        public async Task<ActionResult<Eredmenyek>> Get()
+
+        [HttpGet("all")]
+        public ActionResult<Eredmenyek> GetAll()
         {
-            return Ok(await EredmenyContext.Eredmenyek.ToListAsync());
-        }
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Eredmenyek>> GetById(Guid id)
-        {
-            var os = EredmenyContext.Eredmenyek.FirstOrDefaultAsync(x => x.Id == id);
-            if (os != null)
+            using (var context = new MaratonContext())
             {
-                return Ok(os);
+                return Ok(context.Eredmenyeks.ToList());
             }
+        }
 
-            return NotFound(new { Message = "Nincs ilyen találat" });
+        [HttpGet("by/id")]
+        public ActionResult<Eredmenyek> GetById(int id)
+        {
+            using (var context = new MaratonContext())
+            {
+                var Eredmeny = context.Eredmenyeks.FirstOrDefault(x => x.Futo == id);
+
+                if (Eredmeny != null)
+                {
+                    return StatusCode(200, Eredmeny);
+                }
+                return NotFound();
+            }
+        }
+
+        [HttpPut]
+        public ActionResult<Eredmenyek> Put(int id, UpdateEredmenyDto updateEredmenyDto)
+        {
+            using (var context = new MaratonContext())
+            {
+                var existingEredmeny = context.Eredmenyeks.FirstOrDefault(x => x.Futo == id);
+                if (existingEredmeny != null)
+                {
+                    existingEredmeny.Kor = updateEredmenyDto.kor;
+                    existingEredmeny.Ido = updateEredmenyDto.ido;
+                    context.SaveChanges();
+                    return StatusCode(200, existingEredmeny);
+                }
+                return NotFound();
+            }
         }
     }
 }
